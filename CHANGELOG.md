@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/frank-bee/claude-statusline/compare/v0.13.0...v0.14.0) (2026-09-16)
+
+
+### Features
+
+* **anthropic:** follow the signed-in account, and detect its plan ([#6](https://github.com/frank-bee/claude-statusline/issues/6)) ([db8e34f](https://github.com/frank-bee/claude-statusline/commit/db8e34f93936043937102caaaaa68cb83805e06d))
+
 ## [0.13.0](https://github.com/frank-bee/claude-statusline/compare/v0.12.0...v0.13.0) (2026-09-15)
 
 
