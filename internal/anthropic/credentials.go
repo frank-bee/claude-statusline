@@ -64,6 +64,26 @@ type credentials struct {
 	} `json:"claudeAiOauth"` //nolint:tagliatelle // Claude Code's format
 }
 
+// credentialFingerprintLength is how much of the digest is kept. It only has
+// to tell one credential set apart from another on a single machine.
+const credentialFingerprintLength = 16
+
+// fingerprint identifies a credential set without keeping any part of the
+// secret: a truncated SHA-256 of the refresh token, which stays put while
+// Claude Code rotates the access token beside it. A credential set with no
+// refresh token falls back to the access token, and so gets a new fingerprint
+// on every rotation - one extra fetch, never a wrong answer.
+func (c credentials) fingerprint() string {
+	seed := c.OAuth.RefreshToken
+	if seed == "" {
+		seed = c.OAuth.AccessToken
+	}
+
+	sum := sha256.Sum256([]byte(seed))
+
+	return hex.EncodeToString(sum[:])[:credentialFingerprintLength]
+}
+
 // expired reports whether the access token is past its stated expiry. Missing
 // expiry counts as usable: some credential files omit it, and a token that
 // might work beats no token at all.
@@ -217,6 +237,17 @@ func currentCredentials() (credentials, error) {
 	}
 
 	return zero, fmt.Errorf("no usable credentials (%s)", strings.Join(problems, "; "))
+}
+
+// credentialFingerprint returns the fingerprint of the credentials in force
+// for this process, for callers that cache something derived from them.
+func credentialFingerprint() (string, error) {
+	creds, err := currentCredentials()
+	if err != nil {
+		return "", err
+	}
+
+	return creds.fingerprint(), nil
 }
 
 // accessToken reads the OAuth token Claude Code already holds. Nothing here
