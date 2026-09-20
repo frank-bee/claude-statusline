@@ -135,6 +135,7 @@ legible rather than merely visible.
 | `directory` | on | Current directory (tilde-collapsed, truncated) |
 | `git_branch` | on | Git branch with status indicators (dirty, ahead/behind, worktree) |
 | `model` | on | Model name (display name, short name, or raw ID) |
+| `effort` | off | Effective reasoning effort level |
 | `cost` | on | Session cost in USD |
 | `context` | on | Context window usage with progress bar |
 | `session_timer` | off | Session elapsed time |
@@ -171,6 +172,27 @@ Template fields:
 format = "{{.Short}}"
 style = "bold"
 ```
+
+### Effort module
+
+The `effort` module shows the effective reasoning effort from Claude Code. It reflects in-session `/effort` changes and model-specific fallback behavior. It is off by default; enable it to give effort its own position and style.
+
+```toml
+format = "$directory | $git_branch | $model | $effort | $context"
+
+[effort]
+disabled = false
+format = "{{.Level}}"
+style = "bold yellow"
+```
+
+Template fields:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `{{.Level}}` | Effective effort level reported by Claude Code | `xhigh` |
+
+The module renders empty when Claude Code omits effort for a model that does not support it.
 
 ### Where usage figures come from
 

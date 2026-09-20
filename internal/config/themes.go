@@ -122,6 +122,9 @@ func powerlineConfig(preset string, format string, segFg string, colors [5]strin
 		Model: ModelConfig{
 			Format: " {{.DisplayName}} ", Style: segStyle(segFg, colors[2]) + " bold",
 		},
+		Effort: EffortConfig{
+			Format: "{{.Level}}", Style: "bold yellow", Disabled: true,
+		},
 		Cost: CostConfig{
 			Format: ` ${{printf "%.2f" .TotalCostUSD}} `,
 			Style:  segStyle(segFg, colors[3]),
