@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -25,6 +26,14 @@ import (
 
 // ProfileTTL is how long a cached profile is served. The plan changes when a
 // seat is reassigned, which is rare - unlike usage, which moves constantly.
+//
+// The TTL is only half of what keeps the cache honest. The cache path is
+// derived from the config directory, not from the account, and the credentials
+// in a directory can be replaced by something that answers for a different
+// account; a purely time-based cache would then serve a confidently wrong plan
+// for the rest of the day. So the fingerprint of the credentials a profile was
+// fetched with is recorded beside it, and a cache that does not match the
+// credentials in force is stale no matter how fresh it is.
 const ProfileTTL = 24 * time.Hour
 
 // Plan is the kind of subscription the current credentials belong to.
@@ -110,6 +119,74 @@ func profilePath() (string, error) {
 	return filepath.Join(dir, "profile.json"), nil
 }
 
+// credentialFile is where the fingerprint of the credentials a cached profile
+// was fetched with is recorded.
+const credentialFile = "profile.credential"
+
+func credentialPath() (string, error) {
+	dir, err := accountDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, credentialFile), nil
+}
+
+// cachedCredential returns the fingerprint recorded with the cached profile.
+// It is empty when there is none - the case for a cache written before this
+// was recorded - which counts as a mismatch and costs one fetch.
+func cachedCredential() string {
+	path, err := credentialPath()
+	if err != nil {
+		return ""
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(raw))
+}
+
+// matchesCredentials reports whether the cached profile was fetched with the
+// credentials in force now.
+//
+// It answers true when no fingerprint can be computed: with no credentials to
+// compare against there is nothing to fetch with either, so serving the cache
+// beats failing outright.
+func matchesCredentials() bool {
+	current, err := credentialFingerprint()
+	if err != nil {
+		return true
+	}
+
+	return cachedCredential() == current
+}
+
+// recordCredential notes which credentials the cache now on disk was fetched
+// with. It runs after that cache is in place: a fingerprint written first
+// would vouch for the profile it replaced, while one written second can only
+// ever cost an extra fetch.
+func recordCredential() error {
+	fingerprint, err := credentialFingerprint()
+	if err != nil {
+		return err
+	}
+
+	path, err := credentialPath()
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(path, []byte(fingerprint), filePerms)
+	if err != nil {
+		return fmt.Errorf("writing profile credential: %w", err)
+	}
+
+	return nil
+}
+
 // LoadProfile returns the cached profile, fetching it when there is none or it
 // has gone stale. Unlike usage this is allowed to block: it is called by the
 // plan command, not on the render path.
@@ -120,7 +197,7 @@ func LoadProfile() (*Profile, error) {
 	}
 
 	info, statErr := os.Stat(path)
-	if statErr != nil || time.Since(info.ModTime()) > ProfileTTL {
+	if statErr != nil || time.Since(info.ModTime()) > ProfileTTL || !matchesCredentials() {
 		err = RefreshProfile()
 		if err != nil {
 			return nil, err
@@ -176,5 +253,10 @@ func RefreshProfile() error {
 		return fmt.Errorf("writing profile cache: %w", err)
 	}
 
-	return os.Rename(tmp, path)
+	err = os.Rename(tmp, path)
+	if err != nil {
+		return fmt.Errorf("replacing profile cache: %w", err)
+	}
+
+	return recordCredential()
 }

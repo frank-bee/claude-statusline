@@ -15,6 +15,18 @@ import (
 // enterpriseProfile is a real /oauth/profile response, trimmed to the fields
 // this tool reads. The shape is the contract; the values are a live Enterprise
 // usage-based seat.
+const proProfile = `{
+	"account": {
+		"email": "someone@example.com",
+		"has_claude_pro": true,
+		"has_claude_max": false
+	},
+	"organization": {
+		"name": "someone's Organization",
+		"organization_type": "claude_pro"
+	}
+}`
+
 const enterpriseProfile = `{
 	"account": {
 		"email": "someone@example.com",
@@ -133,5 +145,61 @@ func TestLoadProfile(t *testing.T) {
 		_, err := anthropic.LoadProfile()
 
 		require.ErrorContains(t, err, "parsing profile cache")
+	})
+}
+
+// TestLoadProfileFollowsCredentials pins the guarantee the TTL alone cannot
+// give: the cache path is derived from the config directory, so a cache that
+// was fetched with other credentials than the ones in force must not be
+// served, however recently it was written.
+func TestLoadProfileFollowsCredentials(t *testing.T) {
+	anthropic.SuppressKeychain(t)
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", home)
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+
+	credentials := filepath.Join(home, ".credentials.json")
+
+	signIn := func(t *testing.T, refresh string) {
+		t.Helper()
+
+		require.NoError(t, os.WriteFile(credentials, []byte(
+			`{"claudeAiOauth":{"accessToken":"test-token","refreshToken":"`+refresh+`"}}`), 0o600))
+	}
+
+	body := proProfile
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(server.Close)
+
+	anthropic.SetBaseURL(t, server.URL)
+
+	signIn(t, "first-account")
+
+	profile, err := anthropic.LoadProfile()
+	require.NoError(t, err)
+	require.Equal(t, anthropic.PlanPro, profile.Plan())
+
+	t.Run("a second load with the same credentials is served from the cache", func(t *testing.T) {
+		body = enterpriseProfile
+
+		profile, err := anthropic.LoadProfile()
+
+		require.NoError(t, err)
+		assert.Equal(t, anthropic.PlanPro, profile.Plan(), "the cache is still within its TTL")
+	})
+
+	t.Run("other credentials refetch, however fresh the cache is", func(t *testing.T) {
+		body = enterpriseProfile
+		signIn(t, "second-account")
+
+		profile, err := anthropic.LoadProfile()
+
+		require.NoError(t, err)
+		assert.Equal(t, anthropic.PlanEnterprise, profile.Plan())
 	})
 }
