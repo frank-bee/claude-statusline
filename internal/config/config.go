@@ -13,6 +13,7 @@ type Config struct {
 	Preset       string             `toml:"preset"`
 	Format       string             `toml:"format"`
 	Model        ModelConfig        `toml:"model"`
+	Effort       EffortConfig       `toml:"effort"`
 	Directory    DirectoryConfig    `toml:"directory"`
 	Cost         CostConfig         `toml:"cost"`
 	Context      ContextConfig      `toml:"context"`
@@ -35,6 +36,13 @@ type Threshold struct {
 
 // ModelConfig holds model module settings.
 type ModelConfig struct {
+	Format   string `toml:"format"`
+	Style    string `toml:"style"`
+	Disabled bool   `toml:"disabled"`
+}
+
+// EffortConfig holds effort module settings.
+type EffortConfig struct {
 	Format   string `toml:"format"`
 	Style    string `toml:"style"`
 	Disabled bool   `toml:"disabled"`
@@ -173,6 +181,11 @@ func Default() Config {
 		Model: ModelConfig{
 			Format: "{{.DisplayName}}",
 			Style:  "bold",
+		},
+		Effort: EffortConfig{
+			Format:   "{{.Level}}",
+			Style:    "bold yellow",
+			Disabled: true,
 		},
 		Directory: DirectoryConfig{
 			Format:               "{{.Dir}}",
@@ -349,6 +362,12 @@ format = "$directory | $git_branch | $model | $cost | $context"
 # format = "{{.DisplayName}}"
 # style = "bold"
 # Template fields: DisplayName, ID, Short (e.g. "Sonnet 4.6")
+
+# [effort]
+# disabled = false
+# format = "{{.Level}}"
+# style = "bold yellow"
+# Template fields: Level (e.g. "low", "medium", "high", "xhigh", "max")
 
 # [directory]
 # format = "{{.Dir}}"
