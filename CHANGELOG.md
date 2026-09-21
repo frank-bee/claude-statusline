@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.16.0](https://github.com/frank-bee/claude-statusline/compare/v0.15.0...v0.16.0) (2026-09-21)
+
+
+### Features
+
+* **output_style:** add a module for Claude Code's output style ([cabf2c5](https://github.com/frank-bee/claude-statusline/commit/cabf2c56f95240bd5ece6bf9951cfb315ef769ab))
+
+
+### Bug Fixes
+
+* **render:** make the section separator configurable ([ded0549](https://github.com/frank-bee/claude-statusline/commit/ded05498c33fd641ffee7b445a7399f4ba246894))
+
 ## [0.15.0](https://github.com/frank-bee/claude-statusline/compare/v0.14.0...v0.15.0) (2026-09-21)
 
 
