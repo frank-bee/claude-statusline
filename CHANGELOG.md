@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.15.0](https://github.com/frank-bee/claude-statusline/compare/v0.14.0...v0.15.0) (2026-09-21)
+
+
+### Features
+
+* add effort statusline module ([55cf5c0](https://github.com/frank-bee/claude-statusline/commit/55cf5c0d90e20fb155f15344e2830f746ddab590))
+
+
+### Bug Fixes
+
+* **anthropic:** bind the cached profile to the credentials it came from ([#8](https://github.com/frank-bee/claude-statusline/issues/8)) ([dd5f7a9](https://github.com/frank-bee/claude-statusline/commit/dd5f7a90f3fee0e9b098c082d228909e8747a8e2))
+* remove separators around empty sections ([0a31f0a](https://github.com/frank-bee/claude-statusline/commit/0a31f0af19275f53e9ff4607e1d5295185907663))
+
 ## [0.14.0](https://github.com/frank-bee/claude-statusline/compare/v0.13.0...v0.14.0) (2026-09-16)
 
 
