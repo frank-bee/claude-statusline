@@ -51,6 +51,7 @@ func presetMinimal() Config {
 	cfg := Default()
 	cfg.Preset = "minimal"
 	cfg.Format = "$directory  $git_branch  $model  $cost  $context  $usage"
+	cfg.Separator = "  "
 	cfg.Directory.Style = "blue"
 	cfg.GitBranch.Format = "{{.Branch}}"
 	cfg.GitBranch.Style = "cyan"
